@@ -1,26 +1,38 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import type { AccessGrant } from "@/lib/types/database";
 import {
   createAccessGrant,
-  revokeAccessGrant,
+  expireAccessGrant,
   sendAccessLinkEmail,
+  toggleTenantAccess,
 } from "@/lib/actions/access-grants";
 
 export function AccessGrantControl({
   propertyId,
   tenantId,
+  tenantAccessEnabled,
   grant,
 }: {
   propertyId: string;
   tenantId: string;
+  tenantAccessEnabled: boolean;
   grant: AccessGrant | null;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [sent, setSent] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  function handleToggle() {
+    setError(null);
+    startTransition(async () => {
+      const result = await toggleTenantAccess(propertyId, tenantId, !tenantAccessEnabled);
+      if (result.error) setError(result.error);
+    });
+  }
 
   function handleCreate() {
     setError(null);
@@ -30,18 +42,18 @@ export function AccessGrantControl({
     });
   }
 
-  function handleRevoke() {
+  function handleExpire() {
     if (!grant) return;
     if (
       !window.confirm(
-        "Revoke this tenant's access link? It will stop working immediately."
+        "Expire this tenant's link? It will stop working immediately and can't be reactivated — you'd need to generate a new one."
       )
     ) {
       return;
     }
     setError(null);
     startTransition(async () => {
-      const result = await revokeAccessGrant(propertyId, grant.id);
+      const result = await expireAccessGrant(propertyId, grant.id);
       if (result.error) setError(result.error);
     });
   }
@@ -74,48 +86,44 @@ export function AccessGrantControl({
     });
   }
 
-  if (!grant || !grant.active) {
-    return (
-      <div className="flex items-center gap-2 text-xs">
-        <span className="text-neutral-400">
-          {grant ? "Tenant access revoked" : "Tenant access off"}
-        </span>
-        <button
-          onClick={handleCreate}
-          disabled={isPending}
-          className="text-neutral-600 underline-offset-2 hover:text-neutral-900 hover:underline disabled:opacity-50"
-        >
-          {grant ? "Generate new link" : "Enable tenant access"}
-        </button>
-        {error && <span className="text-red-600">{error}</span>}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="text-green-700">Tenant access on</span>
+    <div className="flex flex-wrap items-center gap-2">
       <button
-        onClick={handleSend}
+        onClick={handleToggle}
         disabled={isPending}
-        className="text-neutral-600 underline-offset-2 hover:text-neutral-900 hover:underline disabled:opacity-50"
+        className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-50 ${
+          tenantAccessEnabled
+            ? "bg-green-100 text-green-800 hover:bg-green-200"
+            : "bg-neutral-200 text-neutral-600 hover:bg-neutral-300"
+        }`}
       >
-        {sent ? "Sent!" : "Send link to tenant"}
+        Tenant access: {tenantAccessEnabled ? "On" : "Off"}
       </button>
-      <button
-        onClick={handleCopy}
-        className="text-neutral-600 underline-offset-2 hover:text-neutral-900 hover:underline"
-      >
-        {copied ? "Copied!" : "Copy link"}
-      </button>
-      <button
-        onClick={handleRevoke}
-        disabled={isPending}
-        className="text-red-600 underline-offset-2 hover:text-red-800 hover:underline disabled:opacity-50"
-      >
-        Revoke
-      </button>
-      {error && <span className="text-red-600">{error}</span>}
+
+      {!grant || !grant.active ? (
+        <Button size="sm" onClick={handleCreate} disabled={isPending}>
+          {grant ? "Generate new link" : "Generate link"}
+        </Button>
+      ) : (
+        <>
+          <Button size="sm" onClick={handleSend} disabled={isPending}>
+            {sent ? "Sent!" : "Send link to tenant"}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={handleCopy}>
+            {copied ? "Copied!" : "Copy link"}
+          </Button>
+          <Button size="sm" variant="destructive" onClick={handleExpire} disabled={isPending}>
+            Expire link
+          </Button>
+          {!tenantAccessEnabled && (
+            <span className="text-xs text-neutral-400">
+              Link won&apos;t work until access is turned on
+            </span>
+          )}
+        </>
+      )}
+
+      {error && <span className="w-full text-xs text-red-600">{error}</span>}
     </div>
   );
 }

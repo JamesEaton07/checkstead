@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import type { Property } from "@/lib/types/database";
 import { deleteProperty, updateProperty } from "@/lib/actions/properties";
 
@@ -59,20 +60,12 @@ export function PropertyCard({ property }: { property: Property }) {
             />
           </div>
           <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
-            >
+            <Button type="submit" disabled={isPending}>
               Save
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50"
-            >
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setIsEditing(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -93,20 +86,13 @@ export function PropertyCard({ property }: { property: Property }) {
           <p className="text-sm text-neutral-500">{property.unit_info}</p>
         )}
       </div>
-      <div className="flex items-center gap-3 text-sm">
-        <button
-          onClick={() => setIsEditing(true)}
-          className="text-neutral-600 hover:text-neutral-900"
-        >
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="secondary" onClick={() => setIsEditing(true)}>
           Edit
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={isPending}
-          className="text-red-600 hover:text-red-800 disabled:opacity-50"
-        >
+        </Button>
+        <Button size="sm" variant="destructive" onClick={handleDelete} disabled={isPending}>
           Remove
-        </button>
+        </Button>
       </div>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>

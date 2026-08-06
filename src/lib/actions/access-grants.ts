@@ -7,11 +7,34 @@ import { sendEmail } from "@/lib/email/resend";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Generating a "new" link always inserts a fresh row (fresh token) rather
-// than reactivating an old one — once a link is revoked it should stay dead
+// than reactivating an old one — once a link is expired it should stay dead
 // permanently, in case it was ever shared somewhere it shouldn't have been.
+// Also turns tenant access on, since generating a link (first time, or a
+// fresh one after expiry) clearly means the landlord wants access enabled.
 export async function createAccessGrant(propertyId: string, tenantId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("access_grants").insert({ tenant_id: tenantId });
+
+  const [{ error: grantError }, { error: tenantError }] = await Promise.all([
+    supabase.from("access_grants").insert({ tenant_id: tenantId }),
+    supabase.from("tenants").update({ tenant_access_enabled: true }).eq("id", tenantId),
+  ]);
+
+  if (grantError) return { error: grantError.message };
+  if (tenantError) return { error: tenantError.message };
+
+  revalidatePath(`/dashboard/properties/${propertyId}`);
+  return { error: null };
+}
+
+// Expires one specific link permanently (one-way). Independent of the
+// tenant-level access toggle — expiring a link never changes whether
+// tenant access is turned on, it only kills that one token.
+export async function expireAccessGrant(propertyId: string, grantId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("access_grants")
+    .update({ active: false })
+    .eq("id", grantId);
 
   if (error) return { error: error.message };
 
@@ -19,12 +42,14 @@ export async function createAccessGrant(propertyId: string, tenantId: string) {
   return { error: null };
 }
 
-export async function revokeAccessGrant(propertyId: string, grantId: string) {
+// The persistent on/off switch for a tenant's access. Reversible — turning
+// it back on resumes whatever link was already sent, no need to regenerate.
+export async function toggleTenantAccess(propertyId: string, tenantId: string, enabled: boolean) {
   const supabase = await createClient();
   const { error } = await supabase
-    .from("access_grants")
-    .update({ active: false })
-    .eq("id", grantId);
+    .from("tenants")
+    .update({ tenant_access_enabled: enabled })
+    .eq("id", tenantId);
 
   if (error) return { error: error.message };
 
@@ -53,7 +78,7 @@ export async function sendAccessLinkEmail(
     return { error: "Couldn't find that tenant, link, or property." };
   }
   if (!grant.active) {
-    return { error: "This link has been revoked. Generate a new one first." };
+    return { error: "This link has expired. Generate a new one first." };
   }
   if (!tenant.contact || !EMAIL_PATTERN.test(tenant.contact)) {
     return { error: "This tenant doesn't have a valid email on file to send to." };

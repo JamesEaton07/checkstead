@@ -330,6 +330,7 @@ export type Database = {
           lease_status: string
           name: string
           property_id: string
+          tenant_access_enabled: boolean
           updated_at: string
         }
         Insert: {
@@ -339,6 +340,7 @@ export type Database = {
           lease_status?: string
           name: string
           property_id: string
+          tenant_access_enabled?: boolean
           updated_at?: string
         }
         Update: {
@@ -348,6 +350,7 @@ export type Database = {
           lease_status?: string
           name?: string
           property_id?: string
+          tenant_access_enabled?: boolean
           updated_at?: string
         }
         Relationships: [

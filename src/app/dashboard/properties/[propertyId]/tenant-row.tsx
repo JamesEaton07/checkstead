@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/button";
 import type { AccessGrant, Tenant } from "@/lib/types/database";
 import { removeTenant } from "@/lib/actions/tenants";
 import { AccessGrantControl } from "./access-grant-control";
@@ -27,7 +28,7 @@ export function TenantRow({
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-neutral-200 p-4">
+    <div className="space-y-3 rounded-lg border border-neutral-200 p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="font-medium">{tenant.name}</p>
@@ -38,15 +39,16 @@ export function TenantRow({
             </span>
           </div>
         </div>
-        <button
-          onClick={handleRemove}
-          disabled={isPending}
-          className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
-        >
+        <Button size="sm" variant="destructive" onClick={handleRemove} disabled={isPending}>
           Remove
-        </button>
+        </Button>
       </div>
-      <AccessGrantControl propertyId={propertyId} tenantId={tenant.id} grant={grant} />
+      <AccessGrantControl
+        propertyId={propertyId}
+        tenantId={tenant.id}
+        tenantAccessEnabled={tenant.tenant_access_enabled}
+        grant={grant}
+      />
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
