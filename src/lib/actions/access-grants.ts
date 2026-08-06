@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/email/escape-html";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -19,8 +20,9 @@ export async function createAccessGrant(propertyId: string, tenantId: string) {
     supabase.from("tenants").update({ tenant_access_enabled: true }).eq("id", tenantId),
   ]);
 
-  if (grantError) return { error: grantError.message };
-  if (tenantError) return { error: tenantError.message };
+  if (grantError || tenantError) {
+    return { error: "Couldn't create an access link. Please try again." };
+  }
 
   revalidatePath(`/dashboard/properties/${propertyId}`);
   return { error: null };
@@ -36,7 +38,7 @@ export async function expireAccessGrant(propertyId: string, grantId: string) {
     .update({ active: false })
     .eq("id", grantId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't expire this link. Please try again." };
 
   revalidatePath(`/dashboard/properties/${propertyId}`);
   return { error: null };
@@ -51,7 +53,7 @@ export async function toggleTenantAccess(propertyId: string, tenantId: string, e
     .update({ tenant_access_enabled: enabled })
     .eq("id", tenantId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't update tenant access. Please try again." };
 
   revalidatePath(`/dashboard/properties/${propertyId}`);
   return { error: null };
@@ -88,15 +90,20 @@ export async function sendAccessLinkEmail(
   const propertyLine = property.unit_info
     ? `${property.address}, ${property.unit_info}`
     : property.address;
+  // tenant.name and propertyLine are landlord-entered free text — escape
+  // before interpolating into raw HTML so they can't inject markup/scripts
+  // into an email sent to the tenant.
+  const safeName = escapeHtml(tenant.name);
+  const safePropertyLine = escapeHtml(propertyLine);
 
   const { error } = await sendEmail({
     to: tenant.contact,
     subject: `Access to your Checkstead record for ${propertyLine}`,
     html: `
-      <p>Hi ${tenant.name},</p>
+      <p>Hi ${safeName},</p>
       <p>Your landlord has given you access to Checkstead, a property
       condition and rent-reliability tracker, for your tenancy at
-      ${propertyLine}. Use the link below to view your record — it only
+      ${safePropertyLine}. Use the link below to view your record — it only
       shows information from your own tenancy, nothing before it started
       and nothing from other tenants.</p>
       <p><a href="${url}">${url}</a></p>
@@ -104,7 +111,7 @@ export async function sendAccessLinkEmail(
     `,
   });
 
-  if (error) return { error };
+  if (error) return { error: "Couldn't send the email. Please try again." };
 
   return { error: null };
 }

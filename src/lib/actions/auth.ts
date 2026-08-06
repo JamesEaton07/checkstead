@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirect } from "@/lib/safe-redirect";
 
 export async function signOut(redirectTo: string = "/login") {
   const supabase = await createClient();
@@ -32,7 +33,7 @@ export async function requestMagicLink(
   );
 
   if (rpcError) {
-    return { error: rpcError.message };
+    return { error: "Something went wrong. Please try again." };
   }
 
   if (!allowed) {
@@ -42,10 +43,11 @@ export async function requestMagicLink(
     };
   }
 
+  const safeTo = safeRedirect(redirectTo, "/dashboard");
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
+      emailRedirectTo: `${origin}/auth/callback?redirectTo=${encodeURIComponent(safeTo)}`,
     },
   });
 

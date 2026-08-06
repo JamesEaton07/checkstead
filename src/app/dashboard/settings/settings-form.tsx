@@ -44,7 +44,7 @@ export function SettingsForm({ landlord }: { landlord: Landlord }) {
             defaultChecked={landlord.notify_sms}
           />
           SMS
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-neutral-500">
             (delivery arrives in a later update)
           </span>
         </label>
@@ -61,16 +61,22 @@ export function SettingsForm({ landlord }: { landlord: Landlord }) {
           min={0}
           step={1}
           defaultValue={landlord.days_late_threshold}
-          className="w-32 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          className="w-32 rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
         />
         <p className="text-xs text-neutral-500">
           Used later to flag rent as late on a tenant&apos;s reliability record.
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
       {saved && !error && (
-        <p className="text-sm text-green-600">Settings saved.</p>
+        <p role="status" className="text-sm text-green-800">
+          Settings saved.
+        </p>
       )}
 
       <button

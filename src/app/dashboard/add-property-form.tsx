@@ -35,7 +35,7 @@ export function AddPropertyForm() {
           name="address"
           required
           placeholder="123 Main St, Springfield"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
         />
       </div>
       <div className="flex-1 space-y-1.5">
@@ -46,7 +46,7 @@ export function AddPropertyForm() {
           id="unit_info"
           name="unit_info"
           placeholder="Unit 2B"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
         />
       </div>
       <button
@@ -56,7 +56,11 @@ export function AddPropertyForm() {
       >
         {isPending ? "Adding…" : "Add property"}
       </button>
-      {error && <p className="text-sm text-red-600 sm:basis-full">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600 sm:basis-full">
+          {error}
+        </p>
+      )}
     </form>
   );
 }

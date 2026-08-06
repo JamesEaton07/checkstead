@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/email/escape-html";
 import type { TenantAccessRequest } from "@/lib/types/database";
 
 // Called from the public /tenant/access/[token] page when a tenant's access
@@ -17,7 +18,7 @@ export async function requestTenantAccess(token: string): Promise<{ error: strin
     .rpc("request_tenant_access", { p_token: token })
     .maybeSingle<TenantAccessRequest>();
 
-  if (rpcError) return { error: rpcError.message };
+  if (rpcError) return { error: "Something went wrong. Please try again." };
   if (!data) return { error: "This link isn't valid." };
   if (!data.allowed) {
     return { error: "A request was already sent recently. Please wait before trying again." };
@@ -26,12 +27,17 @@ export async function requestTenantAccess(token: string): Promise<{ error: strin
   // SMS delivery (Twilio) arrives in a later build step — for now this only
   // does anything if the landlord has email notifications on.
   if (data.landlord_notify_email) {
+    // tenant_name and property_address are landlord-entered free text —
+    // escape before interpolating into raw HTML so they can't inject
+    // markup/scripts into an email sent to the landlord.
+    const safeName = escapeHtml(data.tenant_name);
+    const safeAddress = escapeHtml(data.property_address);
     const { error } = await sendEmail({
       to: data.landlord_email,
       subject: `${data.tenant_name} is requesting access — ${data.property_address}`,
       html: `
-        <p>${data.tenant_name} tried to open their Checkstead access link
-        for ${data.property_address} and found it turned off.</p>
+        <p>${safeName} tried to open their Checkstead access link
+        for ${safeAddress} and found it turned off.</p>
         <p>If you'd like to let them back in: if tenant access is toggled
         off for them, turn it back on and their existing link will start
         working again — no need to send a new one. If their link was
@@ -39,7 +45,7 @@ export async function requestTenantAccess(token: string): Promise<{ error: strin
         property page and send it to them.</p>
       `,
     });
-    if (error) return { error };
+    if (error) return { error: "Couldn't send the request. Please try again." };
   }
 
   return { error: null };

@@ -30,7 +30,7 @@ export async function updateSettings(formData: FormData) {
     })
     .eq("id", user.id);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't save your settings. Please try again." };
 
   revalidatePath("/dashboard/settings");
   return { error: null };

@@ -1,6 +1,26 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { TenantAccess } from "@/lib/types/database";
 import { RequestAccessButton } from "./request-access-button";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  const supabase = await createClient();
+  const { data: access } = await supabase
+    .rpc("get_tenant_access", { p_token: token })
+    .maybeSingle<TenantAccess>();
+
+  if (!access) return { title: "Link not valid" };
+  // Don't put the property address in the title when access is off — this
+  // page is shown to someone whose access was intentionally turned off, so
+  // keep the browser tab generic rather than confirming property details.
+  if (!access.active) return { title: "Access turned off" };
+  return { title: access.property_address };
+}
 
 // Public route — no Supabase Auth session involved. The token itself is
 // the credential; get_tenant_access() validates it and returns the

@@ -18,7 +18,7 @@ export async function addTenant(propertyId: string, formData: FormData) {
     contact: contact || null,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't add this tenant. Please try again." };
 
   revalidatePath(`/dashboard/properties/${propertyId}`);
   return { error: null };
@@ -28,7 +28,7 @@ export async function removeTenant(propertyId: string, tenantId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("tenants").delete().eq("id", tenantId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't remove this tenant. Please try again." };
 
   revalidatePath(`/dashboard/properties/${propertyId}`);
   return { error: null };

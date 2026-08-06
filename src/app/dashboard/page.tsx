@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { Property } from "@/lib/types/database";
 import { AddPropertyForm } from "./add-property-form";
 import { PropertyCard } from "./property-card";
+
+export const metadata: Metadata = {
+  title: "Properties",
+};
 
 export default async function DashboardPage() {
   const supabase = await createClient();

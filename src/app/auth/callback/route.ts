@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirect } from "@/lib/safe-redirect";
 
 // Landlord magic-link callback only — tenants never use Supabase Auth at
 // all (see src/app/tenant/access). Every successful callback here routes
@@ -8,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
+  const redirectTo = safeRedirect(searchParams.get("redirectTo"), "/dashboard");
 
   if (code) {
     const supabase = await createClient();

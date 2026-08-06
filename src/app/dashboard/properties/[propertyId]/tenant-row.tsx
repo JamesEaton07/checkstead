@@ -49,7 +49,11 @@ export function TenantRow({
         tenantAccessEnabled={tenant.tenant_access_enabled}
         grant={grant}
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

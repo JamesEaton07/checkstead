@@ -23,7 +23,7 @@ export function RequestAccessButton({ token }: { token: string }) {
 
   if (status === "sent") {
     return (
-      <p className="text-sm text-neutral-500">
+      <p role="status" className="text-sm text-neutral-500">
         Your landlord has been notified.
       </p>
     );
@@ -38,7 +38,11 @@ export function RequestAccessButton({ token }: { token: string }) {
       >
         {isPending ? "Requesting…" : "Request access"}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

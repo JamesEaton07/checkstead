@@ -13,7 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Checkstead",
+  title: {
+    default: "Checkstead",
+    // Child pages set a short `title`, e.g. "Settings", and get it rendered
+    // as "Settings | Checkstead" — distinct per-page titles (WCAG 2.4.2)
+    // without repeating the brand name everywhere.
+    template: "%s | Checkstead",
+  },
   description: "Property condition tracking and tenant reliability records for small landlords.",
 };
 

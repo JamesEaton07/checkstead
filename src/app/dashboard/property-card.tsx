@@ -43,20 +43,26 @@ export function PropertyCard({ property }: { property: Property }) {
       <div className="rounded-lg border border-neutral-200 p-4">
         <form action={handleUpdate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1 space-y-1.5">
-            <label className="text-sm font-medium">Address</label>
+            <label htmlFor={`address-${property.id}`} className="text-sm font-medium">
+              Address
+            </label>
             <input
+              id={`address-${property.id}`}
               name="address"
               defaultValue={property.address}
               required
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+              className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
             />
           </div>
           <div className="flex-1 space-y-1.5">
-            <label className="text-sm font-medium">Unit info</label>
+            <label htmlFor={`unit-info-${property.id}`} className="text-sm font-medium">
+              Unit info
+            </label>
             <input
+              id={`unit-info-${property.id}`}
               name="unit_info"
               defaultValue={property.unit_info ?? ""}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+              className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
             />
           </div>
           <div className="flex gap-2">
@@ -68,7 +74,11 @@ export function PropertyCard({ property }: { property: Property }) {
             </Button>
           </div>
         </form>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-2 text-sm text-red-600">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
@@ -94,7 +104,11 @@ export function PropertyCard({ property }: { property: Property }) {
           Remove
         </Button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

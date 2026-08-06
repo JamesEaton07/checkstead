@@ -1,9 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { AccessGrant, Property, Tenant } from "@/lib/types/database";
 import { AddTenantForm } from "./add-tenant-form";
 import { TenantRow } from "./tenant-row";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ propertyId: string }>;
+}): Promise<Metadata> {
+  const { propertyId } = await params;
+  const supabase = await createClient();
+  const { data: property } = await supabase
+    .from("properties")
+    .select("address")
+    .eq("id", propertyId)
+    .single();
+
+  return { title: property?.address ?? "Property" };
+}
 
 export default async function PropertyPage({
   params,

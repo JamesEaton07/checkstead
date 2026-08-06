@@ -19,6 +19,12 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-neutral-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Skip to main content
+      </a>
       <header className="border-b border-neutral-200">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
@@ -34,7 +40,9 @@ export default async function DashboardLayout({
             >
               Settings
             </Link>
-            <span className="text-neutral-300">|</span>
+            <span aria-hidden="true" className="text-neutral-300">
+              |
+            </span>
             <span className="text-neutral-500">{user.email}</span>
             <form action={signOut.bind(null, "/login")}>
               <button
@@ -47,7 +55,9 @@ export default async function DashboardLayout({
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">{children}</main>
+      <main id="main-content" className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
+        {children}
+      </main>
     </div>
   );
 }

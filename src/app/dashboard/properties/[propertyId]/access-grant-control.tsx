@@ -100,6 +100,7 @@ export function AccessGrantControl({
         <button
           onClick={handleToggle}
           disabled={isPending}
+          aria-pressed={tenantAccessEnabled}
           className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-50 ${
             tenantAccessEnabled
               ? "bg-green-100 text-green-800 hover:bg-green-200"
@@ -126,14 +127,26 @@ export function AccessGrantControl({
             Expire link
           </Button>
           {!tenantAccessEnabled && (
-            <span className="text-xs text-neutral-400">
+            <span className="text-xs text-neutral-500">
               Link won&apos;t work until access is turned on
             </span>
           )}
         </>
       )}
 
-      {error && <span className="w-full text-xs text-red-600">{error}</span>}
+      {/* Visible button text already changes to "Sent!"/"Copied!", but that
+          alone isn't announced to screen readers — this mirrors it as an
+          explicit status message. */}
+      <span role="status" className="sr-only">
+        {sent && "Access link sent to tenant."}
+        {copied && "Access link copied to clipboard."}
+      </span>
+
+      {error && (
+        <span role="alert" className="w-full text-xs text-red-600">
+          {error}
+        </span>
+      )}
     </div>
   );
 }
