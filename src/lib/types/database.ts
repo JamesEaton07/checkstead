@@ -368,11 +368,23 @@ export type Database = {
       get_tenant_access: {
         Args: { p_token: string }
         Returns: {
+          active: boolean
           lease_status: string
           property_address: string
           property_id: string
           property_unit_info: string
           tenant_id: string
+          tenant_name: string
+        }[]
+      }
+      request_tenant_access: {
+        Args: { p_token: string }
+        Returns: {
+          allowed: boolean
+          landlord_email: string
+          landlord_notify_email: boolean
+          landlord_notify_sms: boolean
+          property_address: string
           tenant_name: string
         }[]
       }
@@ -558,3 +570,6 @@ export type TenantAccess = Omit<
 > & {
   lease_status: LeaseStatus
 }
+
+export type TenantAccessRequest =
+  Database["public"]["Functions"]["request_tenant_access"]["Returns"][number]

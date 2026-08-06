@@ -21,11 +21,16 @@ Build-order steps 1 and 2 are done:
 
 1. Create a Supabase project (or run one locally with the Supabase CLI).
 2. Copy `.env.example` to `.env.local` and fill in the values from
-   Project Settings -> API:
+   Project Settings -> API, plus a Resend API key (Resend dashboard -> API
+   Keys — "Sending access" scope is enough):
    ```
    NEXT_PUBLIC_SUPABASE_URL=
    NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   RESEND_API_KEY=
    ```
+   `RESEND_API_KEY` must also be added to Vercel's project environment
+   variables for production — it's server-only (no `NEXT_PUBLIC_` prefix)
+   and I can't set that one myself.
 3. Run the migrations in `supabase/migrations/` against your project
    (Supabase dashboard SQL editor, or `npx supabase db push` if you're using
    the CLI — this project is set up as a local dev dependency, already
@@ -65,14 +70,21 @@ Build-order steps 1 and 2 are done:
   reset.
 - **Tenant** (`/tenant/access/[token]`) — no account, no password, no
   Supabase Auth session at all. A landlord generates a link from a
-  tenant's row on the property page (`/dashboard/properties/[propertyId]`);
-  the token in that URL *is* the credential. `get_tenant_access()`
-  (`supabase/migrations/0006_tenant_access_rpc.sql`, security definer)
-  validates the token against `access_grants` and returns only the single
-  tenant + property it's scoped to — nothing else is reachable through it.
-  Revoking sets `active = false` on that grant row; "generate new link"
-  always inserts a fresh grant with a new token rather than reactivating an
-  old one, so a revoked link never comes back to life.
+  tenant's row on the property page (`/dashboard/properties/[propertyId]`)
+  and either copies it or has the app email it to the tenant's contact
+  address directly. The token in that URL *is* the credential.
+  `get_tenant_access()` (security definer) validates it against
+  `access_grants` and returns only the single tenant + property it's scoped
+  to — nothing else is reachable through it. Revoking sets `active = false`
+  on that grant row rather than deleting it; "generate new link" always
+  inserts a fresh grant with a new token rather than reactivating an old
+  one, so a revoked link never comes back to life on its own. If a tenant
+  clicks a link after it's been revoked, they see a clear "access turned
+  off" message with a "Request access" button, which notifies the landlord
+  (email today; SMS once Twilio is wired up in a later build step,
+  depending on their settings) — rate-limited per tenant via the same
+  `try_consume_email_send` counter the login flow uses, under a separate
+  namespaced key so the two can't interfere with each other.
 
 ## Project layout
 
@@ -82,16 +94,20 @@ Build-order steps 1 and 2 are done:
 - `src/app/auth/set-password` — landlord sets/resets their password after a
   magic-link sign-in
 - `src/app/tenant/access/[token]` — public, token-authorized tenant view
-  (no session). Currently shows tenant + property info only; check-ins and
-  the reliability record land here in later build steps.
+  (no session). Active grant: shows tenant + property info (check-ins and
+  the reliability record land here in later build steps). Revoked grant:
+  "access turned off" message + a request-access button.
 - `src/app/dashboard` — landlord-only routes (protected by `src/proxy.ts`)
   - `/dashboard` — property list, add/edit/remove
   - `/dashboard/properties/[propertyId]` — tenant add/remove, and
-    generate/copy/revoke each tenant's access link
+    generate/send/copy/revoke each tenant's access link
   - `/dashboard/settings` — notification preference, days-late threshold
 - `src/lib/supabase` — browser/server/middleware Supabase client helpers
 - `src/lib/actions` — server actions for properties, tenants, settings,
-  auth, and access grants
+  auth, access grants, and tenant access requests
+- `src/lib/email/resend.ts` — direct Resend API calls for app-triggered
+  emails (access-link invites, access-request notifications) — separate
+  from Supabase Auth's own SMTP config, which only handles login emails
 - `src/lib/types/database.ts` — generated Supabase types + convenience aliases
 - `supabase/migrations` — SQL schema, in order:
   - `0001_init.sql` — step 1: `landlords`, `properties`, `tenants`
@@ -108,3 +124,7 @@ Build-order steps 1 and 2 are done:
     exhaust Supabase's project-wide email quota for everyone else
   - `0006_*.sql` — step 2: `get_tenant_access()`, the security-definer RPC
     behind the tenant access-grant mechanism
+  - `0007_*.sql` — `get_tenant_access()` now returns revoked grants too
+    (with `active: false`) instead of nothing, so the UI can tell "revoked"
+    apart from "never existed"; adds `request_tenant_access()` for the
+    tenant-side "notify my landlord" button

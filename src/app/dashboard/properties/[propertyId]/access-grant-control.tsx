@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from "react";
 import type { AccessGrant } from "@/lib/types/database";
-import { createAccessGrant, revokeAccessGrant } from "@/lib/actions/access-grants";
+import {
+  createAccessGrant,
+  revokeAccessGrant,
+  sendAccessLinkEmail,
+} from "@/lib/actions/access-grants";
 
 export function AccessGrantControl({
   propertyId,
@@ -15,6 +19,7 @@ export function AccessGrantControl({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sent, setSent] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleCreate() {
@@ -49,6 +54,26 @@ export function AccessGrantControl({
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function handleSend() {
+    if (!grant) return;
+    setError(null);
+    setSent(false);
+    startTransition(async () => {
+      const result = await sendAccessLinkEmail(
+        propertyId,
+        tenantId,
+        grant.id,
+        window.location.origin
+      );
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setSent(true);
+      setTimeout(() => setSent(false), 3000);
+    });
+  }
+
   if (!grant || !grant.active) {
     return (
       <div className="flex items-center gap-2 text-xs">
@@ -70,6 +95,13 @@ export function AccessGrantControl({
   return (
     <div className="flex items-center gap-2 text-xs">
       <span className="text-green-700">Tenant access on</span>
+      <button
+        onClick={handleSend}
+        disabled={isPending}
+        className="text-neutral-600 underline-offset-2 hover:text-neutral-900 hover:underline disabled:opacity-50"
+      >
+        {sent ? "Sent!" : "Send link to tenant"}
+      </button>
       <button
         onClick={handleCopy}
         className="text-neutral-600 underline-offset-2 hover:text-neutral-900 hover:underline"

@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import type { TenantAccess } from "@/lib/types/database";
+import { RequestAccessButton } from "./request-access-button";
 
 // Public route — no Supabase Auth session involved. The token itself is
-// the credential; get_tenant_access() validates it and returns only the
-// single tenant/property it's scoped to. See supabase/migrations/0006.
+// the credential; get_tenant_access() validates it and returns the
+// single tenant/property it's scoped to, active or not. See
+// supabase/migrations/0006 and 0007.
 export default async function TenantAccessPage({
   params,
 }: {
@@ -22,9 +24,24 @@ export default async function TenantAccessPage({
         <div className="max-w-md space-y-2">
           <h1 className="text-xl font-semibold">Link not valid</h1>
           <p className="text-sm text-neutral-500">
-            This link has been revoked or doesn&apos;t exist. Contact your
-            landlord if you think this is a mistake.
+            This link doesn&apos;t exist. Contact your landlord if you think
+            this is a mistake.
           </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!access.active) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
+        <div className="max-w-md space-y-4">
+          <h1 className="text-xl font-semibold">Access turned off</h1>
+          <p className="text-sm text-neutral-500">
+            Sorry, please request access from your landlord for further
+            accessibility.
+          </p>
+          <RequestAccessButton token={token} />
         </div>
       </main>
     );
