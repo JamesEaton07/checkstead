@@ -23,7 +23,7 @@ export function RequestAccessButton({ token }: { token: string }) {
 
   if (status === "sent") {
     return (
-      <p role="status" className="text-sm text-neutral-500">
+      <p role="status" className="text-sm text-neutral-500 dark:text-neutral-400">
         Your landlord has been notified.
       </p>
     );
@@ -34,12 +34,12 @@ export function RequestAccessButton({ token }: { token: string }) {
       <button
         onClick={handleClick}
         disabled={isPending}
-        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
+        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100"
       >
         {isPending ? "Requesting…" : "Request access"}
       </button>
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
           {error}
         </p>
       )}

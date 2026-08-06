@@ -12,7 +12,7 @@ export default function SetPasswordPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Set your password</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
             You&apos;re signed in via email link. Set a password now so you can
             sign in directly next time.
           </p>

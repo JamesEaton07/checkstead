@@ -101,7 +101,7 @@ export function AccessGrantControl({
           onClick={handleToggle}
           disabled={isPending}
           aria-pressed={tenantAccessEnabled}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-50 ${
+          className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100 ${
             tenantAccessEnabled
               ? "bg-green-100 text-green-800 hover:bg-green-200"
               : "bg-neutral-200 text-neutral-600 hover:bg-neutral-300"
@@ -127,7 +127,7 @@ export function AccessGrantControl({
             Expire link
           </Button>
           {!tenantAccessEnabled && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               Link won&apos;t work until access is turned on
             </span>
           )}
@@ -143,7 +143,7 @@ export function AccessGrantControl({
       </span>
 
       {error && (
-        <span role="alert" className="w-full text-xs text-red-600">
+        <span role="alert" className="w-full text-xs text-red-600 dark:text-red-400">
           {error}
         </span>
       )}

@@ -12,7 +12,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Checkstead</h1>
-          <p className="text-sm text-neutral-500">Landlord sign-in.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Landlord sign-in.</p>
         </div>
 
         <Suspense fallback={null}>

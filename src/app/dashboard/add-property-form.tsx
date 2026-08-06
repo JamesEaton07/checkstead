@@ -35,7 +35,7 @@ export function AddPropertyForm() {
           name="address"
           required
           placeholder="123 Main St, Springfield"
-          className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
+          className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1 dark:focus:border-neutral-100 dark:focus:ring-neutral-100"
         />
       </div>
       <div className="flex-1 space-y-1.5">
@@ -46,18 +46,18 @@ export function AddPropertyForm() {
           id="unit_info"
           name="unit_info"
           placeholder="Unit 2B"
-          className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
+          className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1 dark:focus:border-neutral-100 dark:focus:ring-neutral-100"
         />
       </div>
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
+        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100"
       >
         {isPending ? "Adding…" : "Add property"}
       </button>
       {error && (
-        <p role="alert" className="text-sm text-red-600 sm:basis-full">
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400 sm:basis-full">
           {error}
         </p>
       )}

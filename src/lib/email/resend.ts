@@ -30,6 +30,11 @@ export async function sendEmail({
 
   if (!response.ok) {
     const body = await response.text();
+    // Logged server-side only — the caller-facing error stays generic so
+    // internal delivery/config details never reach the browser, but this
+    // makes the real cause (bad key, unverified domain, etc.) visible in
+    // server logs instead of requiring a live repro to diagnose.
+    console.error(`Resend send failed (${response.status}): ${body}`);
     return { error: `Failed to send email (${response.status}): ${body}` };
   }
 

@@ -79,6 +79,38 @@ export type Database = {
           },
         ]
       }
+      checkin_photos: {
+        Row: {
+          category: string
+          checkin_id: string
+          created_at: string
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          category: string
+          checkin_id: string
+          created_at?: string
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          category?: string
+          checkin_id?: string
+          created_at?: string
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkin_photos_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: false
+            referencedRelation: "checkins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkins: {
         Row: {
           checkin_type: string
@@ -368,6 +400,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_tenant_baseline_checkin: {
+        Args: { p_token: string }
+        Returns: {
+          active: boolean
+          checkin_id: string
+          status: string
+        }[]
+      }
+      list_checkin_photos: {
+        Args: { p_token: string }
+        Returns: {
+          category: string
+          created_at: string
+          storage_path: string
+        }[]
+      }
+      record_checkin_photo: {
+        Args: { p_category: string; p_storage_path: string; p_token: string }
+        Returns: boolean
+      }
+      submit_baseline_checkin: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       get_tenant_access: {
         Args: { p_token: string }
         Returns: {
@@ -546,6 +602,13 @@ export const Constants = {
 export type LeaseStatus = "active" | "past"
 export type CheckinType = "baseline" | "regular" | "move-out"
 export type CheckinStatus = "pending" | "submitted" | "overdue"
+export type PhotoCategory =
+  | "kitchen"
+  | "bathroom"
+  | "living_room"
+  | "bedroom"
+  | "exterior"
+  | "other"
 export type MaintenanceStatus = "open" | "in_progress" | "resolved"
 export type SubscriptionTier = "free" | "paid"
 
@@ -557,6 +620,9 @@ export type Tenant = Omit<Tables<"tenants">, "lease_status"> & {
 export type Checkin = Omit<Tables<"checkins">, "checkin_type" | "status"> & {
   checkin_type: CheckinType
   status: CheckinStatus
+}
+export type CheckinPhoto = Omit<Tables<"checkin_photos">, "category"> & {
+  category: PhotoCategory
 }
 export type ReliabilityRecord = Tables<"reliability_records">
 export type MaintenanceRequest = Omit<Tables<"maintenance_requests">, "status"> & {
@@ -576,3 +642,17 @@ export type TenantAccess = Omit<
 
 export type TenantAccessRequest =
   Database["public"]["Functions"]["request_tenant_access"]["Returns"][number]
+
+export type TenantBaselineCheckin = Omit<
+  Database["public"]["Functions"]["get_tenant_baseline_checkin"]["Returns"][number],
+  "status"
+> & {
+  status: CheckinStatus
+}
+
+export type TenantCheckinPhotoSummary = Omit<
+  Database["public"]["Functions"]["list_checkin_photos"]["Returns"][number],
+  "category"
+> & {
+  category: PhotoCategory
+}

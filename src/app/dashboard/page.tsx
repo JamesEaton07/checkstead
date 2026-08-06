@@ -38,7 +38,7 @@ export default async function DashboardPage() {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
           No properties yet. Add your first one above.
         </p>
       )}

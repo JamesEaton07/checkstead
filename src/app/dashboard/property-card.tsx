@@ -51,7 +51,7 @@ export function PropertyCard({ property }: { property: Property }) {
               name="address"
               defaultValue={property.address}
               required
-              className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
+              className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1 dark:focus:border-neutral-100 dark:focus:ring-neutral-100"
             />
           </div>
           <div className="flex-1 space-y-1.5">
@@ -62,7 +62,7 @@ export function PropertyCard({ property }: { property: Property }) {
               id={`unit-info-${property.id}`}
               name="unit_info"
               defaultValue={property.unit_info ?? ""}
-              className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1"
+              className="w-full rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1 dark:focus:border-neutral-100 dark:focus:ring-neutral-100"
             />
           </div>
           <div className="flex gap-2">
@@ -75,7 +75,7 @@ export function PropertyCard({ property }: { property: Property }) {
           </div>
         </form>
         {error && (
-          <p role="alert" className="mt-2 text-sm text-red-600">
+          <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
             {error}
           </p>
         )}
@@ -88,12 +88,12 @@ export function PropertyCard({ property }: { property: Property }) {
       <div>
         <Link
           href={`/dashboard/properties/${property.id}`}
-          className="font-medium hover:underline"
+          className="rounded-sm font-medium hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100"
         >
           {property.address}
         </Link>
         {property.unit_info && (
-          <p className="text-sm text-neutral-500">{property.unit_info}</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">{property.unit_info}</p>
         )}
       </div>
       <div className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export function PropertyCard({ property }: { property: Property }) {
         </Button>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-600">
+        <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
           {error}
         </p>
       )}

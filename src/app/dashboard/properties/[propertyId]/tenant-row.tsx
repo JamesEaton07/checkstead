@@ -5,15 +5,19 @@ import { Button } from "@/components/button";
 import type { AccessGrant, Tenant } from "@/lib/types/database";
 import { removeTenant } from "@/lib/actions/tenants";
 import { AccessGrantControl } from "./access-grant-control";
+import { BaselineCheckinGallery } from "./baseline-checkin-gallery";
+import type { BaselineCheckinSummary } from "./page";
 
 export function TenantRow({
   propertyId,
   tenant,
   grant,
+  baselineCheckin,
 }: {
   propertyId: string;
   tenant: Tenant;
   grant: AccessGrant | null;
+  baselineCheckin: BaselineCheckinSummary | null;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -32,7 +36,7 @@ export function TenantRow({
       <div className="flex items-center justify-between">
         <div>
           <p className="font-medium">{tenant.name}</p>
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
             {tenant.contact && <span>{tenant.contact}</span>}
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs capitalize text-neutral-600">
               {tenant.lease_status}
@@ -49,8 +53,9 @@ export function TenantRow({
         tenantAccessEnabled={tenant.tenant_access_enabled}
         grant={grant}
       />
+      {baselineCheckin && <BaselineCheckinGallery checkin={baselineCheckin} />}
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
           {error}
         </p>
       )}

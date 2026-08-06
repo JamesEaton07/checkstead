@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import type { TenantAccess } from "@/lib/types/database";
+import type {
+  TenantAccess,
+  TenantBaselineCheckin,
+  TenantCheckinPhotoSummary,
+} from "@/lib/types/database";
 import { RequestAccessButton } from "./request-access-button";
+import { PhotoChecklist } from "./photo-checklist";
 
 export async function generateMetadata({
   params,
@@ -43,7 +48,7 @@ export default async function TenantAccessPage({
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
         <div className="max-w-md space-y-2">
           <h1 className="text-xl font-semibold">Link not valid</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
             This link doesn&apos;t exist. Contact your landlord if you think
             this is a mistake.
           </p>
@@ -57,7 +62,7 @@ export default async function TenantAccessPage({
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
         <div className="max-w-md space-y-4">
           <h1 className="text-xl font-semibold">Access turned off</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Sorry, please request access from your landlord for further
             accessibility.
           </p>
@@ -67,26 +72,42 @@ export default async function TenantAccessPage({
     );
   }
 
+  const { data: checkin } = await supabase
+    .rpc("get_tenant_baseline_checkin", { p_token: token })
+    .maybeSingle<TenantBaselineCheckin>();
+
+  const { data: photos } = checkin
+    ? await supabase.rpc("list_checkin_photos", { p_token: token }).returns<TenantCheckinPhotoSummary[]>()
+    : { data: null as TenantCheckinPhotoSummary[] | null };
+
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-16">
       <div className="w-full max-w-lg space-y-8">
         <div>
           <h1 className="text-xl font-semibold">{access.property_address}</h1>
           {access.property_unit_info && (
-            <p className="text-sm text-neutral-500">{access.property_unit_info}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{access.property_unit_info}</p>
           )}
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
             {access.tenant_name} —{" "}
             <span className="capitalize">{access.lease_status}</span> tenancy
           </p>
         </div>
 
-        <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-500">
-          Check-ins and your reliability record will show up here once those
-          features are built. This page is scoped to your own tenancy only —
-          nothing before your lease started, nothing after it ends, and
-          nothing from other tenants.
-        </div>
+        {checkin ? (
+          <PhotoChecklist
+            token={token}
+            initialStatus={checkin.status}
+            initialPhotos={photos ?? []}
+          />
+        ) : (
+          <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-500 dark:text-neutral-400">
+            Your reliability record will show up here once that feature is
+            built. This page is scoped to your own tenancy only — nothing
+            before your lease started, nothing after it ends, and nothing
+            from other tenants.
+          </div>
+        )}
       </div>
     </main>
   );
