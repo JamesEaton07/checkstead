@@ -14,8 +14,9 @@ Build-order steps 1 and 2 are done:
   add/remove, and a settings page (notification channels + days-late
   threshold).
 - **Step 2** — the core access-grant mechanism: a landlord can generate a
-  scoped, revocable link per tenant, opt-in, with no account or password
-  involved on the tenant's side.
+  scoped link per tenant (opt-in, no account or password on the tenant's
+  side), toggle their access on/off at any time, and expire a specific
+  link permanently if needed.
 
 ## Setup
 
@@ -75,11 +76,22 @@ Build-order steps 1 and 2 are done:
   address directly. The token in that URL *is* the credential.
   `get_tenant_access()` (security definer) validates it against
   `access_grants` and returns only the single tenant + property it's scoped
-  to — nothing else is reachable through it. Revoking sets `active = false`
-  on that grant row rather than deleting it; "generate new link" always
-  inserts a fresh grant with a new token rather than reactivating an old
-  one, so a revoked link never comes back to life on its own. If a tenant
-  clicks a link after it's been revoked, they see a clear "access turned
+  to — nothing else is reachable through it.
+
+  There are two separate, independent controls over whether that link
+  actually works, both on the tenant's row:
+  - **Tenant access toggle** (`tenants.tenant_access_enabled`) — a
+    persistent, reversible on/off switch. Turning it off blocks the tenant
+    immediately without touching their link; turning it back on resumes
+    the *same* link, no new one needed.
+  - **Expire link** (`access_grants.active`) — a one-way action on one
+    specific token. Once expired it's dead permanently (in case it was
+    ever shared somewhere it shouldn't have been); "generate new link"
+    always inserts a fresh grant with a new token rather than reactivating
+    the old one, and also turns the toggle back on.
+
+  `get_tenant_access()` only grants access when *both* are true. Either
+  way — toggled off or expired — the tenant sees a clear "access turned
   off" message with a "Request access" button, which notifies the landlord
   (email today; SMS once Twilio is wired up in a later build step,
   depending on their settings) — rate-limited per tenant via the same
@@ -94,14 +106,19 @@ Build-order steps 1 and 2 are done:
 - `src/app/auth/set-password` — landlord sets/resets their password after a
   magic-link sign-in
 - `src/app/tenant/access/[token]` — public, token-authorized tenant view
-  (no session). Active grant: shows tenant + property info (check-ins and
-  the reliability record land here in later build steps). Revoked grant:
-  "access turned off" message + a request-access button.
+  (no session). Access on: shows tenant + property info (check-ins and
+  the reliability record land here in later build steps). Access off
+  (toggled off or link expired): "access turned off" message + a
+  request-access button.
 - `src/app/dashboard` — landlord-only routes (protected by `src/proxy.ts`)
   - `/dashboard` — property list, add/edit/remove
-  - `/dashboard/properties/[propertyId]` — tenant add/remove, and
-    generate/send/copy/revoke each tenant's access link
+  - `/dashboard/properties/[propertyId]` — tenant add/remove, and the
+    access-grant control per tenant: on/off toggle, generate/send/copy
+    link, expire link
   - `/dashboard/settings` — notification preference, days-late threshold
+- `src/components/button.tsx` — shared `Button` (primary/secondary/
+  destructive variants) used by every data-mutating button in the
+  dashboard; pure navigation stays plain text
 - `src/lib/supabase` — browser/server/middleware Supabase client helpers
 - `src/lib/actions` — server actions for properties, tenants, settings,
   auth, access grants, and tenant access requests
@@ -124,7 +141,15 @@ Build-order steps 1 and 2 are done:
     exhaust Supabase's project-wide email quota for everyone else
   - `0006_*.sql` — step 2: `get_tenant_access()`, the security-definer RPC
     behind the tenant access-grant mechanism
-  - `0007_*.sql` — `get_tenant_access()` now returns revoked grants too
-    (with `active: false`) instead of nothing, so the UI can tell "revoked"
+  - `0007_*.sql` — `get_tenant_access()` now returns expired grants too
+    (with `active: false`) instead of nothing, so the UI can tell "expired"
     apart from "never existed"; adds `request_tenant_access()` for the
     tenant-side "notify my landlord" button
+  - `0008_*.sql` — adds `tenants.tenant_access_enabled`, the persistent
+    on/off toggle, decoupled from `access_grants.active` (one-way link
+    expiry) — see the tenant-access explanation above
+  - `0009_*.sql` — revokes the default PUBLIC execute grant on
+    `handle_new_user()` and `set_updated_at()` (internal trigger-only
+    helpers) so they're not exposed as callable RPC endpoints; triggers
+    keep firing normally, since trigger invocation isn't subject to the
+    caller's EXECUTE grant

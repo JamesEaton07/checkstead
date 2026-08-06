@@ -68,6 +68,14 @@ export function AccessGrantControl({
 
   function handleSend() {
     if (!grant) return;
+    if (
+      !tenantAccessEnabled &&
+      !window.confirm(
+        "Tenant access is currently off — they won't be able to use this link until you turn it back on. Send anyway?"
+      )
+    ) {
+      return;
+    }
     setError(null);
     setSent(false);
     startTransition(async () => {
@@ -88,17 +96,19 @@ export function AccessGrantControl({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        onClick={handleToggle}
-        disabled={isPending}
-        className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-50 ${
-          tenantAccessEnabled
-            ? "bg-green-100 text-green-800 hover:bg-green-200"
-            : "bg-neutral-200 text-neutral-600 hover:bg-neutral-300"
-        }`}
-      >
-        Tenant access: {tenantAccessEnabled ? "On" : "Off"}
-      </button>
+      {grant && (
+        <button
+          onClick={handleToggle}
+          disabled={isPending}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-50 ${
+            tenantAccessEnabled
+              ? "bg-green-100 text-green-800 hover:bg-green-200"
+              : "bg-neutral-200 text-neutral-600 hover:bg-neutral-300"
+          }`}
+        >
+          Tenant access: {tenantAccessEnabled ? "On" : "Off"}
+        </button>
+      )}
 
       {!grant || !grant.active ? (
         <Button size="sm" onClick={handleCreate} disabled={isPending}>
