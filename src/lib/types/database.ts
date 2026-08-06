@@ -365,6 +365,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_tenant_access: {
+        Args: { p_token: string }
+        Returns: {
+          lease_status: string
+          property_address: string
+          property_id: string
+          property_unit_info: string
+          tenant_id: string
+          tenant_name: string
+        }[]
+      }
       try_consume_email_send: {
         Args: {
           p_email: string
@@ -539,4 +550,11 @@ export type MaintenanceRequest = Omit<Tables<"maintenance_requests">, "status"> 
 export type AccessGrant = Tables<"access_grants">
 export type Subscription = Omit<Tables<"subscriptions">, "tier"> & {
   tier: SubscriptionTier
+}
+
+export type TenantAccess = Omit<
+  Database["public"]["Functions"]["get_tenant_access"]["Returns"][number],
+  "lease_status"
+> & {
+  lease_status: LeaseStatus
 }

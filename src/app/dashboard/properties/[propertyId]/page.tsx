@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Property, Tenant } from "@/lib/types/database";
+import type { AccessGrant, Property, Tenant } from "@/lib/types/database";
 import { AddTenantForm } from "./add-tenant-form";
 import { TenantRow } from "./tenant-row";
 
@@ -30,6 +30,23 @@ export default async function PropertyPage({
     .order("created_at", { ascending: true })
     .returns<Tenant[]>();
 
+  const tenantIds = tenants?.map((tenant) => tenant.id) ?? [];
+  const { data: grants } = await supabase
+    .from("access_grants")
+    .select("*")
+    .in("tenant_id", tenantIds.length > 0 ? tenantIds : [""])
+    .order("created_at", { ascending: false })
+    .returns<AccessGrant[]>();
+
+  // Most recent grant per tenant — grants is already newest-first, so the
+  // first match per tenant_id wins.
+  const latestGrantByTenant = new Map<string, AccessGrant>();
+  for (const grant of grants ?? []) {
+    if (!latestGrantByTenant.has(grant.tenant_id)) {
+      latestGrantByTenant.set(grant.tenant_id, grant);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -50,7 +67,11 @@ export default async function PropertyPage({
           <ul className="space-y-3">
             {tenants.map((tenant) => (
               <li key={tenant.id}>
-                <TenantRow propertyId={property.id} tenant={tenant} />
+                <TenantRow
+                  propertyId={property.id}
+                  tenant={tenant}
+                  grant={latestGrantByTenant.get(tenant.id) ?? null}
+                />
               </li>
             ))}
           </ul>

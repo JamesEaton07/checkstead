@@ -39,12 +39,7 @@ export function LoginForm() {
     setStatus("sending");
     setError(null);
 
-    const { error } = await requestMagicLink(
-      email,
-      "landlord",
-      window.location.origin,
-      redirectTo
-    );
+    const { error } = await requestMagicLink(email, window.location.origin, redirectTo);
 
     if (error) {
       setStatus("error");

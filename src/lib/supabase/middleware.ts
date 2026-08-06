@@ -1,12 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// "/tenant/login" is the only public tenant route — everything else under
-// "/tenant" is a stub portal that still requires a session. This is a
-// placeholder sign-in (see src/app/tenant/login): it's plain Supabase magic
-// link, not yet scoped to a specific tenant's access grant.
-const PUBLIC_PATHS = ["/", "/login", "/auth/callback", "/tenant/login"];
-const AUTH_ENTRY_PATHS = ["/login", "/tenant/login"];
+// "/tenant/access/[token]" is a public, token-authorized route — tenants
+// never get a Supabase Auth session at all (see supabase/migrations/0006
+// and src/app/tenant/access). Every other route requires a landlord session.
+const PUBLIC_PATHS = ["/", "/login", "/auth/callback", "/tenant/access"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -39,15 +37,13 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user && !isPublicPath(request.nextUrl.pathname)) {
-    const loginPath = request.nextUrl.pathname.startsWith("/tenant") ? "/tenant/login" : "/login";
-    const redirectUrl = new URL(loginPath, request.url);
+    const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && AUTH_ENTRY_PATHS.includes(request.nextUrl.pathname)) {
-    const fallback = request.nextUrl.pathname === "/tenant/login" ? "/tenant" : "/dashboard";
-    return NextResponse.redirect(new URL(fallback, request.url));
+  if (user && request.nextUrl.pathname === "/login") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return response;

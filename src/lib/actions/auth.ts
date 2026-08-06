@@ -15,11 +15,8 @@ export async function signOut(redirectTo: string = "/login") {
 const MAGIC_LINK_MAX_ATTEMPTS = 3;
 const MAGIC_LINK_WINDOW_SECONDS = 60 * 60;
 
-type MagicLinkFlow = "landlord" | "tenant";
-
 export async function requestMagicLink(
   email: string,
-  flow: MagicLinkFlow,
   origin: string,
   redirectTo: string
 ): Promise<{ error: string | null }> {
@@ -48,9 +45,7 @@ export async function requestMagicLink(
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${origin}/auth/callback?flow=${flow}&redirectTo=${encodeURIComponent(
-        redirectTo
-      )}`,
+      emailRedirectTo: `${origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
     },
   });
 

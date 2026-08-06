@@ -1,27 +1,24 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+// Landlord magic-link callback only — tenants never use Supabase Auth at
+// all (see src/app/tenant/access). Every successful callback here routes
+// through set-password, since magic link is only ever used for first-time
+// signup or a forgotten-password reset, both of which end the same way.
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  // "landlord" is the default so old/bare callback links (no flow param)
-  // still get routed through the password step rather than straight in.
-  const flow = searchParams.get("flow") === "tenant" ? "tenant" : "landlord";
-  const redirectTo = searchParams.get("redirectTo") ?? (flow === "tenant" ? "/tenant" : "/dashboard");
+  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      if (flow === "landlord") {
-        return NextResponse.redirect(
-          `${origin}/auth/set-password?redirectTo=${encodeURIComponent(redirectTo)}`
-        );
-      }
-      return NextResponse.redirect(`${origin}${redirectTo}`);
+      return NextResponse.redirect(
+        `${origin}/auth/set-password?redirectTo=${encodeURIComponent(redirectTo)}`
+      );
     }
   }
 
-  const loginPath = flow === "tenant" ? "/tenant/login" : "/login";
-  return NextResponse.redirect(`${origin}${loginPath}?error=auth`);
+  return NextResponse.redirect(`${origin}/login?error=auth`);
 }
