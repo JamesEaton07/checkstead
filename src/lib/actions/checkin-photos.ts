@@ -49,11 +49,27 @@ export async function requestPhotoUploadUrl(
 
   const path = `${checkin.checkin_id}/${category}-${crypto.randomUUID()}.jpg`;
 
-  const { data, error } = await createServiceRoleClient()
-    .storage.from("checkin-photos")
-    .createSignedUploadUrl(path);
+  try {
+    const { data, error } = await createServiceRoleClient()
+      .storage.from("checkin-photos")
+      .createSignedUploadUrl(path);
 
-  if (error || !data) {
+    if (error || !data) {
+      return {
+        error: "Couldn't prepare the upload. Please try again.",
+        path: null,
+        signedUrl: null,
+        uploadToken: null,
+      };
+    }
+
+    return { error: null, path: data.path, signedUrl: data.signedUrl, uploadToken: data.token };
+  } catch (err) {
+    // Logged server-side only — createServiceRoleClient() throws
+    // synchronously if its env vars are missing/misconfigured, which
+    // otherwise surfaces to the tenant as an opaque digest-only "Server
+    // Components render" error with zero indication of the real cause.
+    console.error("requestPhotoUploadUrl failed:", err);
     return {
       error: "Couldn't prepare the upload. Please try again.",
       path: null,
@@ -61,8 +77,6 @@ export async function requestPhotoUploadUrl(
       uploadToken: null,
     };
   }
-
-  return { error: null, path: data.path, signedUrl: data.signedUrl, uploadToken: data.token };
 }
 
 const SIGNED_READ_URL_EXPIRY_SECONDS = 60;
