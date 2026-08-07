@@ -1,11 +1,18 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/button";
 import { createClient } from "@/lib/supabase/client";
 import { requestPhotoUploadUrl } from "@/lib/actions/checkin-photos";
 import { compressImage, ImageCompressionError } from "@/lib/image-compression";
-import type { CheckinStatus, PhotoCategory, TenantCheckinPhotoSummary } from "@/lib/types/database";
+import { fetchWithProgress } from "@/lib/fetch-with-progress";
+import type {
+  CheckinStatus,
+  Database,
+  PhotoCategory,
+  TenantCheckinPhotoSummary,
+} from "@/lib/types/database";
 
 const CATEGORIES: { value: PhotoCategory; label: string }[] = [
   { value: "kitchen", label: "Kitchen" },
@@ -19,7 +26,11 @@ const CATEGORIES: { value: PhotoCategory; label: string }[] = [
 type CategoryState = {
   uploadedCount: number;
   previewUrls: string[];
-  isUploading: boolean;
+  // null = idle. A fraction (0–1) while the upload request is actually
+  // sending bytes — the Fetch API Supabase's client normally uses has no
+  // upload-progress event at all, so this relies on fetch-with-progress
+  // swapping in an XMLHttpRequest-backed transport for just this call.
+  uploadProgress: number | null;
   error: string | null;
 };
 
@@ -33,7 +44,7 @@ function initialState(initialPhotos: TenantCheckinPhotoSummary[]): Record<PhotoC
     state[value] = {
       uploadedCount: counts.get(value) ?? 0,
       previewUrls: [],
-      isUploading: false,
+      uploadProgress: null,
       error: null,
     };
   }
@@ -61,10 +72,17 @@ export function PhotoChecklist({
     [categories]
   );
 
+  function setProgress(category: PhotoCategory, uploadProgress: number | null) {
+    setCategories((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], uploadProgress },
+    }));
+  }
+
   async function handleFileSelected(category: PhotoCategory, file: File) {
     setCategories((prev) => ({
       ...prev,
-      [category]: { ...prev[category], isUploading: true, error: null },
+      [category]: { ...prev[category], uploadProgress: 0, error: null },
     }));
 
     try {
@@ -75,8 +93,16 @@ export function PhotoChecklist({
         throw new Error(result.error ?? "Couldn't prepare the upload. Please try again.");
       }
 
-      const supabase = createClient();
-      const { error: uploadError } = await supabase.storage
+      // A throwaway client scoped to this one call — its only job is to
+      // route the upload's PUT request through XMLHttpRequest instead of
+      // fetch() so upload progress is observable. Every other call in
+      // this component keeps using the normal shared client.
+      const progressClient = createBrowserClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { fetch: fetchWithProgress((fraction) => setProgress(category, fraction)) } }
+      );
+      const { error: uploadError } = await progressClient.storage
         .from("checkin-photos")
         .uploadToSignedUrl(result.path, result.uploadToken, compressed, {
           contentType: "image/jpeg",
@@ -85,6 +111,7 @@ export function PhotoChecklist({
         throw new Error("Upload failed. Please try again.");
       }
 
+      const supabase = createClient();
       const { data: recorded, error: recordError } = await supabase.rpc("record_checkin_photo", {
         p_token: token,
         p_category: category,
@@ -100,7 +127,7 @@ export function PhotoChecklist({
         [category]: {
           uploadedCount: prev[category].uploadedCount + 1,
           previewUrls: [...prev[category].previewUrls, previewUrl],
-          isUploading: false,
+          uploadProgress: null,
           error: null,
         },
       }));
@@ -114,7 +141,7 @@ export function PhotoChecklist({
           : "Something went wrong. Please try again.";
       setCategories((prev) => ({
         ...prev,
-        [category]: { ...prev[category], isUploading: false, error: message },
+        [category]: { ...prev[category], uploadProgress: null, error: message },
       }));
     }
   }
@@ -163,6 +190,8 @@ export function PhotoChecklist({
         {CATEGORIES.map(({ value, label }) => {
           const cat = categories[value];
           const inputId = `${idPrefix}-${value}`;
+          const isUploading = cat.uploadProgress !== null;
+          const progressPercent = Math.round((cat.uploadProgress ?? 0) * 100);
           return (
             <li key={value} className="rounded-lg border border-neutral-200 p-3">
               <div className="flex items-center justify-between gap-3">
@@ -177,10 +206,14 @@ export function PhotoChecklist({
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={cat.isUploading}
+                  disabled={isUploading}
                   onClick={() => document.getElementById(inputId)?.click()}
                 >
-                  {cat.isUploading ? "Uploading…" : cat.uploadedCount > 0 ? "Add another" : "Add photo"}
+                  {isUploading
+                    ? `Uploading… ${progressPercent}%`
+                    : cat.uploadedCount > 0
+                      ? "Add another"
+                      : "Add photo"}
                 </Button>
                 <input
                   id={inputId}
@@ -188,7 +221,7 @@ export function PhotoChecklist({
                   accept="image/*"
                   capture="environment"
                   className="sr-only"
-                  disabled={cat.isUploading}
+                  disabled={isUploading}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     e.target.value = "";
@@ -196,6 +229,22 @@ export function PhotoChecklist({
                   }}
                 />
               </div>
+
+              {isUploading && (
+                <div
+                  role="progressbar"
+                  aria-label={`Uploading ${label} photo`}
+                  aria-valuenow={progressPercent}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700"
+                >
+                  <div
+                    className="h-full rounded-full bg-neutral-900 transition-[width] dark:bg-neutral-100"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              )}
 
               {cat.previewUrls.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
