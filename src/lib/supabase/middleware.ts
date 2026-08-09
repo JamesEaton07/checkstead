@@ -3,8 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // "/tenant/access/[token]" is a public, token-authorized route — tenants
 // never get a Supabase Auth session at all (see supabase/migrations/0006
-// and src/app/tenant/access). Every other route requires a landlord session.
-const PUBLIC_PATHS = ["/", "/login", "/auth/callback", "/tenant/access"];
+// and src/app/tenant/access). "/api/cron" is called by Vercel's Cron
+// infrastructure, authenticated by its own CRON_SECRET bearer token
+// check (see src/app/api/cron/check-in-reminders/route.ts), not a
+// Supabase session — Vercel Cron never has one to send. Every other
+// route requires a landlord session.
+const PUBLIC_PATHS = ["/", "/login", "/auth/callback", "/tenant/access", "/api/cron"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));

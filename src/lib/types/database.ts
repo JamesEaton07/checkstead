@@ -179,6 +179,7 @@ export type Database = {
       }
       landlords: {
         Row: {
+          checkin_frequency_days: number | null
           created_at: string
           days_late_threshold: number
           email: string
@@ -188,6 +189,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checkin_frequency_days?: number | null
           created_at?: string
           days_late_threshold?: number
           email: string
@@ -197,6 +199,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checkin_frequency_days?: number | null
           created_at?: string
           days_late_threshold?: number
           email?: string
@@ -400,11 +403,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_tenant_baseline_checkin: {
+      process_due_checkins: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          tenant_id: string
+          tenant_name: string
+          tenant_contact: string | null
+          property_address: string
+          property_unit_info: string | null
+          access_token: string | null
+          landlord_email: string
+          landlord_notify_email: boolean
+          landlord_notify_sms: boolean
+        }[]
+      }
+      get_tenant_current_checkin: {
         Args: { p_token: string }
         Returns: {
           active: boolean
           checkin_id: string
+          checkin_type: string
           status: string
         }[]
       }
@@ -420,7 +438,7 @@ export type Database = {
         Args: { p_category: string; p_storage_path: string; p_token: string }
         Returns: boolean
       }
-      submit_baseline_checkin: {
+      submit_checkin: {
         Args: { p_token: string }
         Returns: boolean
       }
@@ -643,11 +661,12 @@ export type TenantAccess = Omit<
 export type TenantAccessRequest =
   Database["public"]["Functions"]["request_tenant_access"]["Returns"][number]
 
-export type TenantBaselineCheckin = Omit<
-  Database["public"]["Functions"]["get_tenant_baseline_checkin"]["Returns"][number],
-  "status"
+export type TenantCurrentCheckin = Omit<
+  Database["public"]["Functions"]["get_tenant_current_checkin"]["Returns"][number],
+  "status" | "checkin_type"
 > & {
   status: CheckinStatus
+  checkin_type: CheckinType
 }
 
 export type TenantCheckinPhotoSummary = Omit<

@@ -68,6 +68,26 @@ export function SettingsForm({ landlord }: { landlord: Landlord }) {
         </p>
       </div>
 
+      <div className="space-y-1.5">
+        <label htmlFor="checkin_frequency_days" className="text-sm font-medium">
+          Check-in frequency (days)
+        </label>
+        <input
+          id="checkin_frequency_days"
+          name="checkin_frequency_days"
+          type="number"
+          min={1}
+          step={1}
+          defaultValue={landlord.checkin_frequency_days ?? ""}
+          placeholder="Off"
+          className="w-32 rounded-md border border-neutral-500 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1 dark:focus:border-neutral-100 dark:focus:ring-neutral-100"
+        />
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          How often each tenant is asked to submit a new check-in after their move-in baseline —
+          e.g. 7 for weekly, 30 for monthly. Leave blank to turn off scheduled check-ins.
+        </p>
+      </div>
+
       {error && (
         <p role="alert" className="text-sm text-red-600 dark:text-red-400">
           {error}

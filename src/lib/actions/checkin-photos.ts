@@ -35,7 +35,7 @@ export async function requestPhotoUploadUrl(
 
   const supabase = await createClient();
   const { data: checkin } = await supabase
-    .rpc("get_tenant_baseline_checkin", { p_token: token })
+    .rpc("get_tenant_current_checkin", { p_token: token })
     .maybeSingle();
 
   if (!checkin || !checkin.active || checkin.status !== "pending") {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type {
   TenantAccess,
-  TenantBaselineCheckin,
+  TenantCurrentCheckin,
   TenantCheckinPhotoSummary,
 } from "@/lib/types/database";
 import { RequestAccessButton } from "./request-access-button";
@@ -73,8 +73,8 @@ export default async function TenantAccessPage({
   }
 
   const { data: checkin } = await supabase
-    .rpc("get_tenant_baseline_checkin", { p_token: token })
-    .maybeSingle<TenantBaselineCheckin>();
+    .rpc("get_tenant_current_checkin", { p_token: token })
+    .maybeSingle<TenantCurrentCheckin>();
 
   const { data: photos } = checkin
     ? await supabase.rpc("list_checkin_photos", { p_token: token }).returns<TenantCheckinPhotoSummary[]>()
@@ -97,6 +97,7 @@ export default async function TenantAccessPage({
         {checkin ? (
           <PhotoChecklist
             token={token}
+            checkinType={checkin.checkin_type}
             initialStatus={checkin.status}
             initialPhotos={photos ?? []}
           />

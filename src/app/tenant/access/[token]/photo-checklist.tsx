@@ -9,10 +9,17 @@ import { compressImage, ImageCompressionError } from "@/lib/image-compression";
 import { fetchWithProgress } from "@/lib/fetch-with-progress";
 import type {
   CheckinStatus,
+  CheckinType,
   Database,
   PhotoCategory,
   TenantCheckinPhotoSummary,
 } from "@/lib/types/database";
+
+const CHECKIN_TYPE_LABELS: Record<CheckinType, string> = {
+  baseline: "Move-in baseline check-in",
+  regular: "Scheduled check-in",
+  "move-out": "Move-out check-in",
+};
 
 const CATEGORIES: { value: PhotoCategory; label: string }[] = [
   { value: "kitchen", label: "Kitchen" },
@@ -53,10 +60,12 @@ function initialState(initialPhotos: TenantCheckinPhotoSummary[]): Record<PhotoC
 
 export function PhotoChecklist({
   token,
+  checkinType,
   initialStatus,
   initialPhotos,
 }: {
   token: string;
+  checkinType: CheckinType;
   initialStatus: CheckinStatus;
   initialPhotos: TenantCheckinPhotoSummary[];
 }) {
@@ -85,6 +94,14 @@ export function PhotoChecklist({
       [category]: { ...prev[category], uploadProgress: 0, error: null },
     }));
 
+    // The browser doesn't strictly guarantee the final upload.onprogress
+    // (100%) event is dispatched before the request's completion is
+    // handled — on a fast enough transfer that straggler event can land
+    // after this function has already moved on, stomping the "done"
+    // state back to a stuck progress bar. This flag makes every
+    // progress update a no-op once we've stopped caring about them.
+    let uploadSettled = false;
+
     try {
       const compressed = await compressImage(file);
 
@@ -100,13 +117,20 @@ export function PhotoChecklist({
       const progressClient = createBrowserClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { global: { fetch: fetchWithProgress((fraction) => setProgress(category, fraction)) } }
+        {
+          global: {
+            fetch: fetchWithProgress((fraction) => {
+              if (!uploadSettled) setProgress(category, fraction);
+            }),
+          },
+        }
       );
       const { error: uploadError } = await progressClient.storage
         .from("checkin-photos")
         .uploadToSignedUrl(result.path, result.uploadToken, compressed, {
           contentType: "image/jpeg",
         });
+      uploadSettled = true;
       if (uploadError) {
         throw new Error("Upload failed. Please try again.");
       }
@@ -135,6 +159,7 @@ export function PhotoChecklist({
         `${CATEGORIES.find((c) => c.value === category)?.label} photo uploaded.`
       );
     } catch (err) {
+      uploadSettled = true;
       const message =
         err instanceof ImageCompressionError || err instanceof Error
           ? err.message
@@ -151,7 +176,7 @@ export function PhotoChecklist({
     setIsSubmitting(true);
     try {
       const supabase = createClient();
-      const { data: submitted, error } = await supabase.rpc("submit_baseline_checkin", {
+      const { data: submitted, error } = await supabase.rpc("submit_checkin", {
         p_token: token,
       });
       if (error || !submitted) {
@@ -159,7 +184,7 @@ export function PhotoChecklist({
         return;
       }
       setStatus("submitted");
-      setAnnouncement("Baseline check-in submitted.");
+      setAnnouncement(`${CHECKIN_TYPE_LABELS[checkinType]} submitted.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -168,9 +193,13 @@ export function PhotoChecklist({
   if (status === "submitted") {
     return (
       <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-        <h2 className="text-sm font-semibold text-green-800">Baseline check-in submitted</h2>
+        <h2 className="text-sm font-semibold text-green-800">
+          {CHECKIN_TYPE_LABELS[checkinType]} submitted
+        </h2>
         <p className="mt-1 text-sm text-green-700">
-          Your move-in photos are on file. Thanks for completing this.
+          {checkinType === "baseline"
+            ? "Your move-in photos are on file. Thanks for completing this."
+            : "Your photos are on file. Thanks for completing this."}
         </p>
       </div>
     );
@@ -179,10 +208,11 @@ export function PhotoChecklist({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-sm font-semibold">Move-in baseline check-in</h2>
+        <h2 className="text-sm font-semibold">{CHECKIN_TYPE_LABELS[checkinType]}</h2>
         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Add at least one photo of each area below, then submit. This becomes the reference
-          record for your tenancy.
+          {checkinType === "baseline"
+            ? "Add at least one photo of each area below, then submit. This becomes the reference record for your tenancy."
+            : "Add at least one photo of each area below, then submit."}
         </p>
       </div>
 
@@ -276,7 +306,7 @@ export function PhotoChecklist({
 
       <div>
         <Button onClick={handleSubmit} disabled={!allCategoriesComplete || isSubmitting}>
-          {isSubmitting ? "Submitting…" : "Submit baseline check-in"}
+          {isSubmitting ? "Submitting…" : `Submit ${CHECKIN_TYPE_LABELS[checkinType].toLowerCase()}`}
         </Button>
         {!allCategoriesComplete && (
           <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">

@@ -7,12 +7,24 @@ export async function updateSettings(formData: FormData) {
   const notifyEmail = formData.get("notify_email") === "on";
   const notifySms = formData.get("notify_sms") === "on";
   const daysLateThreshold = Number(formData.get("days_late_threshold"));
+  const checkinFrequencyRaw = formData.get("checkin_frequency_days");
 
   if (!notifyEmail && !notifySms) {
     return { error: "Select at least one notification channel." };
   }
   if (!Number.isInteger(daysLateThreshold) || daysLateThreshold < 0) {
     return { error: "Days-late threshold must be a whole number of 0 or more." };
+  }
+
+  // Blank means "no recurring check-ins" — every other value must be a
+  // whole number of at least 1 day.
+  let checkinFrequencyDays: number | null = null;
+  if (typeof checkinFrequencyRaw === "string" && checkinFrequencyRaw.trim() !== "") {
+    const parsed = Number(checkinFrequencyRaw);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      return { error: "Check-in frequency must be a whole number of 1 or more days." };
+    }
+    checkinFrequencyDays = parsed;
   }
 
   const supabase = await createClient();
@@ -27,6 +39,7 @@ export async function updateSettings(formData: FormData) {
       notify_email: notifyEmail,
       notify_sms: notifySms,
       days_late_threshold: daysLateThreshold,
+      checkin_frequency_days: checkinFrequencyDays,
     })
     .eq("id", user.id);
 
